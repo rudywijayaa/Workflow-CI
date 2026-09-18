@@ -56,11 +56,12 @@ with mlflow.start_run(run_name="Baseline_RandomForest", nested=True):
     mlflow.log_metric("recall", rec)
     mlflow.log_metric("f1_score", f1)
 
-    # Log Model ke MLflow
+    # Log Model ke MLflow dengan mendaftarkan trusted type skops
     mlflow.sklearn.log_model(
         sk_model=model,
         artifact_path="model",
-        input_example=X_train.iloc[:5]
+        input_example=X_train.iloc[:5],
+        skops_trusted_types=["sklearn.tree._tree.Tree"]
     )
 
     print("[SUCCESS] Baseline model berhasil dilatih dan di-log ke MLflow!")
