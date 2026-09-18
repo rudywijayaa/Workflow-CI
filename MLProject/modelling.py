@@ -90,12 +90,19 @@ with mlflow.start_run(run_name="Baseline_RandomForest", nested=True) as run:
     mlflow.log_metric("recall", rec)
     mlflow.log_metric("f1_score", f1)
 
-    # --- ARTEFAK 1: Model Joblib (Folder 'model') ---
+    # --- ARTEFAK 1: MLflow Model Standard (Menghasilkan file MLmodel untuk build-docker) ---
+    mlflow.sklearn.log_model(
+        sk_model=model,
+        artifact_path="model",
+        input_example=X_train.iloc[:5]
+    )
+
+    # --- ARTEFAK 2: Model Joblib Manual (Dioper ke extra_artifacts agar tidak menimpa folder model) ---
     model_path = "artifacts/model.joblib"
     joblib.dump(model, model_path)
-    mlflow.log_artifact(model_path, artifact_path="model")
+    mlflow.log_artifact(model_path, artifact_path="extra_artifacts")
 
-    # --- ARTEFAK 2: Plot Confusion Matrix (Folder 'extra_artifacts') ---
+    # --- ARTEFAK 3: Plot Confusion Matrix ---
     cm = confusion_matrix(y_test, y_pred)
     plt.figure(figsize=(6, 5))
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
@@ -107,21 +114,11 @@ with mlflow.start_run(run_name="Baseline_RandomForest", nested=True) as run:
     plt.close()
     mlflow.log_artifact(cm_path, artifact_path="extra_artifacts")
 
-    # --- ARTEFAK 3: Classification Report JSON (Folder 'extra_artifacts') ---
+    # --- ARTEFAK 4: Classification Report JSON ---
     report_dict = classification_report(y_test, y_pred, output_dict=True)
     report_path = "artifacts/classification_report.json"
     with open(report_path, "w") as f:
         json.dump(report_dict, f, indent=4)
     mlflow.log_artifact(report_path, artifact_path="extra_artifacts")
-
-    # --- ARTEFAK 4: MLflow Model Standard ---
-    try:
-        mlflow.sklearn.log_model(
-            sk_model=model,
-            artifact_path="mlflow_model",
-            input_example=X_train.iloc[:5],
-        )
-    except Exception as e:
-        print(f"[WARNING] MLflow sklearn format log skipped: {e}")
 
     print("[SUCCESS] Baseline model dan seluruh artefak berhasil diunggah ke DagsHub!")
