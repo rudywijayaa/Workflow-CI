@@ -59,14 +59,14 @@ jobs:
 
       - name: Build Docker Model
         env:
-          MLFLOW_TRACKING_URI: https://dagshub.com/rudywijayaa/Eksperimen_SML_Rudy-Wijaya.mlflow
+          MLFLOW_TRACKING_URI: https://dagshub.com/rudywijayaa/Eksperimen_SML_Preprocessing_Rudy-Wijaya.mlflow
           MLFLOW_TRACKING_USERNAME: rudywijayaa
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
           DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           python -c "
           import os, dagshub, mlflow
-          dagshub.init(repo_owner='rudywijayaa', repo_name='Eksperimen_SML_Rudy-Wijaya', mlflow=True)
+          dagshub.init(repo_owner='rudywijayaa', repo_name='Eksperimen_SML_Preprocessing_Rudy-Wijaya', mlflow=True)
           run_id = os.environ['RUN_ID']
           print(f'Mengunduh artifact untuk RUN_ID: {run_id}')
           mlflow.artifacts.download_artifacts(run_id=run_id, artifact_path='model', dst_path='./downloaded_model')
