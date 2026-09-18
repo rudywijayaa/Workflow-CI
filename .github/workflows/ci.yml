@@ -45,20 +45,20 @@ jobs:
 
       - name: Build Docker Model
         env:
-          MLFLOW_TRACKING_URI: https://dagshub.com/rudywijayaa/Eksperimen_SML_Preprocessing_Rudy-Wijaya.mlflow
+          MLFLOW_TRACKING_URI: https://dagshub.com/rudywijayaa/Eksperimen_SML_Rudy-Wijaya.mlflow
           MLFLOW_TRACKING_USERNAME: rudywijayaa
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
           DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
-          # 1. Unduh artifact model dari DagsHub ke folder lokal 'downloaded_model'
+          # Download artifact model dari repositori DagsHub yang benar
           python -c "
           import os, dagshub, mlflow
-          dagshub.init(repo_owner='rudywijayaa', repo_name='Eksperimen_SML_Preprocessing_Rudy-Wijaya', mlflow=True)
+          dagshub.init(repo_owner='rudywijayaa', repo_name='Eksperimen_SML_Rudy-Wijaya', mlflow=True)
           run_id = os.environ['RUN_ID']
           mlflow.artifacts.download_artifacts(run_id=run_id, artifact_path='model', dst_path='./downloaded_model')
           "
 
-          # 2. Build Docker image langsung dari folder lokal
+          # Build Docker image dari folder lokal
           mlflow models build-docker --model-uri "./downloaded_model" --name "churn-model"
 
       - name: Log in to Docker Hub
