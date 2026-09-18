@@ -34,7 +34,7 @@ jobs:
           MLFLOW_TRACKING_USERNAME: rudywijayaa
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
-          mlflow run . --no-conda
+          mlflow run . --env-manager=local
 
       - name: Get latest MLflow run_id
         env:
