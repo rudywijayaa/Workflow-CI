@@ -16,13 +16,13 @@ if dagshub_token:
     os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
     mlflow.set_tracking_uri("https://dagshub.com/rudywijayaa/Eksperimen_SML_Preprocessing_Rudy-Wijaya.mlflow")
 else:
-    dagshub.init(repo_owner='rudywijayaa', repo_name='Eksperimen_SML_Preprocessing_Rudy-Wijaya', mlflow=True)
+    dagshub.init(repo_owner="rudywijayaa", repo_name="Eksperimen_SML_Preprocessing_Rudy-Wijaya", mlflow=True)
 
 # Load Data dari folder churn_preprocessing
-X_train = pd.read_csv('churn_preprocessing/X_train.csv')
-X_test = pd.read_csv('churn_preprocessing/X_test.csv')
-y_train = pd.read_csv('churn_preprocessing/y_train.csv').values.ravel()
-y_test = pd.read_csv('churn_preprocessing/y_test.csv').values.ravel()
+X_train = pd.read_csv("churn_preprocessing/X_train.csv")
+X_test = pd.read_csv("churn_preprocessing/X_test.csv")
+y_train = pd.read_csv("churn_preprocessing/y_train.csv").values.ravel()
+y_test = pd.read_csv("churn_preprocessing/y_test.csv").values.ravel()
 
 # Set Nama Eksperimen MLflow
 mlflow.set_experiment("Baseline_Model_Churn")
@@ -49,21 +49,20 @@ with run_context:
 
     y_pred = model.predict(X_test)
     acc = accuracy_score(y_test, y_pred)
-    prec = precision_score(y_test, y_pred, average='weighted')
-    rec = recall_score(y_test, y_pred, average='weighted')
-    f1 = f1_score(y_test, y_pred, average='weighted')
+    prec = precision_score(y_test, y_pred, average="weighted")
+    rec = recall_score(y_test, y_pred, average="weighted")
+    f1 = f1_score(y_test, y_pred, average="weighted")
 
     mlflow.log_metric("accuracy", acc)
     mlflow.log_metric("precision", prec)
     mlflow.log_metric("recall", rec)
     mlflow.log_metric("f1_score", f1)
 
-   # Log Model ke MLflow dengan mendaftarkan trusted type skops
+    # Log Model ke MLflow agar artefak folder 'model' terdaftar di DagsHub
     mlflow.sklearn.log_model(
         sk_model=model,
         artifact_path="model",
-        input_example=X_train.iloc[:5],
-        skops_trusted_types=["sklearn.tree._tree.Tree"]
+        input_example=X_train.iloc[:5]
     )
 
     print("[SUCCESS] Baseline model berhasil dilatih dan di-log ke MLflow!")
