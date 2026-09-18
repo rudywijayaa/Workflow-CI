@@ -90,11 +90,12 @@ with mlflow.start_run(run_name="Baseline_RandomForest", nested=True) as run:
     mlflow.log_metric("recall", rec)
     mlflow.log_metric("f1_score", f1)
 
-    # --- ARTEFAK 1: MLflow Model Standard (Menghasilkan file MLmodel untuk build-docker) ---
+    # --- ARTEFAK 1: MLflow Model Standard ---
     mlflow.sklearn.log_model(
         sk_model=model,
         artifact_path="model",
-        input_example=X_train.iloc[:5]
+        input_example=X_train.iloc[:5],
+        skops_trusted_types=["sklearn.tree._tree.Tree"]
     )
 
     # --- ARTEFAK 2: Model Joblib Manual (Dioper ke extra_artifacts agar tidak menimpa folder model) ---
