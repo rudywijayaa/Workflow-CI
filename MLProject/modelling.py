@@ -58,11 +58,12 @@ with run_context:
     mlflow.log_metric("recall", rec)
     mlflow.log_metric("f1_score", f1)
 
-    # Log Model langsung ke Root Artifact Run utama
+   # Log Model ke MLflow dengan mendaftarkan trusted type skops
     mlflow.sklearn.log_model(
         sk_model=model,
         artifact_path="model",
-        input_example=X_train.iloc[:5]
+        input_example=X_train.iloc[:5],
+        skops_trusted_types=["sklearn.tree._tree.Tree"]
     )
 
     print("[SUCCESS] Baseline model berhasil dilatih dan di-log ke MLflow!")
