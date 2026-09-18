@@ -1,0 +1,15 @@
+name: churn_mlproject_env
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+      - mlflow
+      - dagshub
+      - pandas
+      - numpy
+      - scikit-learn
+      - matplotlib
+      - seaborn
