@@ -33,8 +33,13 @@ jobs:
           mlflow run MLProject --env-manager=local
 
       - name: Get latest MLflow run_id
+        env:
+          MLFLOW_TRACKING_URI: https://dagshub.com/rudywijayaa/Eksperimen_SML_Preprocessing_Rudy-Wijaya.mlflow
+          MLFLOW_TRACKING_USERNAME: rudywijayaa
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
-          RUN_ID=$(ls -td mlruns/0/*/ | head -n 1 | cut -d'/' -f3)
+          # Mengambil RUN_ID terbaru langsung dari server DagsHub menggunakan Python MLflow API
+          RUN_ID=$(python -c "import mlflow; df = mlflow.search_runs(experiment_ids=['0'], order_by=['start_time DESC']); print(df['run_id'].iloc[0])")
           echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
           echo "Latest run_id: $RUN_ID"
 
