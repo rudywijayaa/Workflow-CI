@@ -33,6 +33,8 @@ jobs:
           MLFLOW_TRACKING_URI: https://dagshub.com/rudywijayaa/Eksperimen_SML_Rudy-Wijaya.mlflow
           MLFLOW_TRACKING_USERNAME: rudywijayaa
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+          DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           mlflow run ./MLProject --env-manager=local
 
