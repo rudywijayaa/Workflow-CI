@@ -8,13 +8,14 @@ import dagshub
 
 print("[INFO] Memulai script Baseline Modelling...")
 
-# Inisialisasi DagsHub MLflow Tracking (Bypass browser auth di CI/CD)
+TRACKING_URI = "https://dagshub.com/rudywijayaa/Eksperimen_SML_Preprocessing_Rudy-Wijaya.mlflow"
 dagshub_token = os.getenv("DAGSHUB_USER_TOKEN") or os.getenv("DAGSHUB_CLIENT_TOKEN")
 
 if dagshub_token:
     os.environ["MLFLOW_TRACKING_USERNAME"] = "rudywijayaa"
     os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
-    mlflow.set_tracking_uri("https://dagshub.com/rudywijayaa/Eksperimen_SML_Preprocessing_Rudy-Wijaya.mlflow")
+    os.environ["MLFLOW_TRACKING_URI"] = TRACKING_URI
+    mlflow.set_tracking_uri(TRACKING_URI)
 else:
     dagshub.init(repo_owner="rudywijayaa", repo_name="Eksperimen_SML_Preprocessing_Rudy-Wijaya", mlflow=True)
 
@@ -27,11 +28,8 @@ y_test = pd.read_csv("churn_preprocessing/y_test.csv").values.ravel()
 # Set Nama Eksperimen MLflow
 mlflow.set_experiment("Baseline_Model_Churn")
 
-# Gunakan active run jika dipanggil oleh `mlflow run`, atau buat run baru jika dijalankan terpisah
-active_run = mlflow.active_run()
-run_context = mlflow.start_run(run_name="Baseline_RandomForest") if active_run is None else active_run
-
-with run_context:
+# Gunakan nested=True agar kompatibel dengan mlflow run CLI
+with mlflow.start_run(run_name="Baseline_RandomForest", nested=True):
     n_estimators = 100
     max_depth = 10
     random_state = 42
@@ -58,7 +56,7 @@ with run_context:
     mlflow.log_metric("recall", rec)
     mlflow.log_metric("f1_score", f1)
 
-    # Log Model ke MLflow agar artefak folder 'model' terdaftar di DagsHub
+    # Log Model ke MLflow
     mlflow.sklearn.log_model(
         sk_model=model,
         artifact_path="model",
