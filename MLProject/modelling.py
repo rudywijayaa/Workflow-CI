@@ -19,7 +19,7 @@ import dagshub
 
 print("[INFO] Memulai script Baseline Modelling...")
 
-# 1. Ambil Token DagsHub dari Environment Variable untuk mencegah OAuth Browser di CI/CD
+# 1. Set Token DagsHub ke Environment Variable
 dagshub_token = (
     os.getenv("DAGSHUB_USER_TOKEN")
     or os.getenv("MLFLOW_TRACKING_PASSWORD")
@@ -32,12 +32,11 @@ if dagshub_token:
 repo_owner = "rudywijayaa"
 repo_name = "Eksperimen_SML_Preprocessing_Rudy-Wijaya"
 
-# Inisialisasi DagsHub secara eksplisit dengan token
+# Inisialisasi DagsHub (tanpa argumen token)
 dagshub.init(
     repo_owner=repo_owner,
     repo_name=repo_name,
-    mlflow=True,
-    token=dagshub_token,
+    mlflow=True
 )
 
 mlflow.set_tracking_uri(f"https://dagshub.com/{repo_owner}/{repo_name}.mlflow")
