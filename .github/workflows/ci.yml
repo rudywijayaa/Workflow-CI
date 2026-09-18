@@ -40,13 +40,13 @@ jobs:
 
       - name: Get latest MLflow run_id
         env:
-          MLFLOW_TRACKING_URI: https:///dagshub.com/rudywijayaa/Eksperimen_SML_Preprocessing_Rudy-Wijaya.mlflow
+          MLFLOW_TRACKING_URI: https://dagshub.com/rudywijayaa/Eksperimen_SML_Preprocessing_Rudy-Wijaya.mlflow
           MLFLOW_TRACKING_USERNAME: rudywijayaa
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           python -c "
           import mlflow, os
-          mlflow.set_tracking_uri('https:///dagshub.com/rudywijayaa/Eksperimen_SML_Preprocessing_Rudy-Wijaya.mlflow')
+          mlflow.set_tracking_uri('https://dagshub.com/rudywijayaa/Eksperimen_SML_Preprocessing_Rudy-Wijaya.mlflow')
           runs = mlflow.search_runs(search_all_experiments=True, order_by=['start_time DESC'], max_results=1)
           if not runs.empty:
               run_id = runs.iloc[0]['run_id']
