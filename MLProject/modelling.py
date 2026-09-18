@@ -19,7 +19,10 @@ import dagshub
 
 print("[INFO] Memulai script Baseline Modelling...")
 
-# 1. Set Token DagsHub ke Environment Variable
+repo_owner = "rudywijayaa"
+repo_name = "Eksperimen_SML_Preprocessing_Rudy-Wijaya"
+
+# 1. Autentikasi DagsHub secara Ekstrem-Aman (CI/CD Friendly)
 dagshub_token = (
     os.getenv("DAGSHUB_USER_TOKEN")
     or os.getenv("MLFLOW_TRACKING_PASSWORD")
@@ -28,18 +31,20 @@ dagshub_token = (
 
 if dagshub_token:
     os.environ["DAGSHUB_USER_TOKEN"] = dagshub_token
+    try:
+        import dagshub.auth
+        dagshub.auth.add_app_token(dagshub_token)
+    except Exception as e:
+        print(f"[WARNING] Gagal menambahkan app token ke DagsHub auth: {e}")
 
-repo_owner = "rudywijayaa"
-repo_name = "Eksperimen_SML_Preprocessing_Rudy-Wijaya"
-
-# Inisialisasi DagsHub (tanpa argumen token)
-dagshub.init(
-    repo_owner=repo_owner,
-    repo_name=repo_name,
-    mlflow=True
-)
-
+# Always set Tracking URI langsung ke MLflow
 mlflow.set_tracking_uri(f"https://dagshub.com/{repo_owner}/{repo_name}.mlflow")
+
+try:
+    dagshub.init(repo_owner=repo_owner, repo_name=repo_name, mlflow=True)
+except Exception as e:
+    print(f"[WARNING] DagsHub init interaktif dilewati (Menggunakan Direct MLflow Auth): {e}")
+
 mlflow.set_experiment("Baseline_Model_Churn")
 
 # 2. Load Dataset
