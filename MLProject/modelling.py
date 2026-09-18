@@ -8,19 +8,28 @@ import dagshub
 
 print("[INFO] Memulai script Baseline Modelling...")
 
-# 1. Inisialisasi DagsHub MLflow Tracking
-dagshub.init(repo_owner='rudywijayaa', repo_name='Eksperimen_SML_Preprocessing_Rudy-Wijaya', mlflow=True)
+# Inisialisasi DagsHub MLflow Tracking (Bypass browser auth di CI/CD)
+dagshub_token = os.getenv("DAGSHUB_USER_TOKEN") or os.getenv("DAGSHUB_CLIENT_TOKEN")
 
-# 2. Load Data dari folder churn_preprocessing
+if dagshub_token:
+    # Menggunakan Token saat berjalan di GitHub Actions CI
+    os.environ["MLFLOW_TRACKING_USERNAME"] = "rudywijayaa"
+    os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
+    mlflow.set_tracking_uri("https://dagshub.com/rudywijayaa/Eksperimen_SML_Preprocessing_Rudy-Wijaya.mlflow")
+else:
+    # Menggunakan init bawaan saat berjalan lokal di komputer
+    dagshub.init(repo_owner='rudywijayaa', repo_name='Eksperimen_SML_Preprocessing_Rudy-Wijaya', mlflow=True)
+
+# Load Data dari folder churn_preprocessing
 X_train = pd.read_csv('churn_preprocessing/X_train.csv')
 X_test = pd.read_csv('churn_preprocessing/X_test.csv')
 y_train = pd.read_csv('churn_preprocessing/y_train.csv').values.ravel()
 y_test = pd.read_csv('churn_preprocessing/y_test.csv').values.ravel()
 
-# 3. Set Nama Eksperimen MLflow
+# Set Nama Eksperimen MLflow
 mlflow.set_experiment("Baseline_Model_Churn")
 
-# 4. Training & Logging Baseline Model
+# Training & Logging Baseline Model
 with mlflow.start_run(run_name="Baseline_RandomForest"):
     n_estimators = 100
     max_depth = 10

@@ -25,6 +25,7 @@ jobs:
 
       - name: Run mlflow project
         env:
+          DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
           DAGSHUB_CLIENT_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           mlflow run MLProject --env-manager=local
