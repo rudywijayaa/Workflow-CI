@@ -12,12 +12,10 @@ print("[INFO] Memulai script Baseline Modelling...")
 dagshub_token = os.getenv("DAGSHUB_USER_TOKEN") or os.getenv("DAGSHUB_CLIENT_TOKEN")
 
 if dagshub_token:
-    # Menggunakan Token saat berjalan di GitHub Actions CI
     os.environ["MLFLOW_TRACKING_USERNAME"] = "rudywijayaa"
     os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
     mlflow.set_tracking_uri("https://dagshub.com/rudywijayaa/Eksperimen_SML_Preprocessing_Rudy-Wijaya.mlflow")
 else:
-    # Menggunakan init bawaan saat berjalan lokal di komputer
     dagshub.init(repo_owner='rudywijayaa', repo_name='Eksperimen_SML_Preprocessing_Rudy-Wijaya', mlflow=True)
 
 # Load Data dari folder churn_preprocessing
@@ -29,8 +27,11 @@ y_test = pd.read_csv('churn_preprocessing/y_test.csv').values.ravel()
 # Set Nama Eksperimen MLflow
 mlflow.set_experiment("Baseline_Model_Churn")
 
-# Training & Logging Baseline Model
-with mlflow.start_run(run_name="Baseline_RandomForest", nested=True):
+# Gunakan active run jika dipanggil oleh `mlflow run`, atau buat run baru jika dijalankan terpisah
+active_run = mlflow.active_run()
+run_context = mlflow.start_run(run_name="Baseline_RandomForest") if active_run is None else active_run
+
+with run_context:
     n_estimators = 100
     max_depth = 10
     random_state = 42
@@ -57,12 +58,11 @@ with mlflow.start_run(run_name="Baseline_RandomForest", nested=True):
     mlflow.log_metric("recall", rec)
     mlflow.log_metric("f1_score", f1)
 
-    # Log Model ke MLflow dengan skops_trusted_types
+    # Log Model langsung ke Root Artifact Run utama
     mlflow.sklearn.log_model(
         sk_model=model,
         artifact_path="model",
-        input_example=X_train.iloc[:5],
-        skops_trusted_types=["sklearn.tree._tree.Tree"]
+        input_example=X_train.iloc[:5]
     )
 
     print("[SUCCESS] Baseline model berhasil dilatih dan di-log ke MLflow!")
