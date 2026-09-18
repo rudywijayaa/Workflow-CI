@@ -5,18 +5,41 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    confusion_matrix,
+    classification_report,
+)
 import mlflow
 import mlflow.sklearn
 import dagshub
 
 print("[INFO] Memulai script Baseline Modelling...")
 
-# 1. Inisialisasi DagsHub secara eksplisit agar koneksi Storage/S3 terhubung
+# 1. Ambil Token DagsHub dari Environment Variable untuk mencegah OAuth Browser di CI/CD
+dagshub_token = (
+    os.getenv("DAGSHUB_USER_TOKEN")
+    or os.getenv("MLFLOW_TRACKING_PASSWORD")
+    or os.getenv("DAGSHUB_TOKEN")
+)
+
+if dagshub_token:
+    os.environ["DAGSHUB_USER_TOKEN"] = dagshub_token
+
 repo_owner = "rudywijayaa"
 repo_name = "Eksperimen_SML_Preprocessing_Rudy-Wijaya"
 
-dagshub.init(repo_owner=repo_owner, repo_name=repo_name, mlflow=True)
+# Inisialisasi DagsHub secara eksplisit dengan token
+dagshub.init(
+    repo_owner=repo_owner,
+    repo_name=repo_name,
+    mlflow=True,
+    token=dagshub_token,
+)
+
 mlflow.set_tracking_uri(f"https://dagshub.com/{repo_owner}/{repo_name}.mlflow")
 mlflow.set_experiment("Baseline_Model_Churn")
 
@@ -46,7 +69,7 @@ with mlflow.start_run(run_name="Baseline_RandomForest", nested=True) as run:
     model = RandomForestClassifier(
         n_estimators=n_estimators,
         max_depth=max_depth,
-        random_state=random_state
+        random_state=random_state,
     )
     model.fit(X_train, y_train)
 
@@ -71,12 +94,12 @@ with mlflow.start_run(run_name="Baseline_RandomForest", nested=True) as run:
     # --- ARTEFAK 2: Plot Confusion Matrix (Folder 'extra_artifacts') ---
     cm = confusion_matrix(y_test, y_pred)
     plt.figure(figsize=(6, 5))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
     plt.title("Confusion Matrix - Baseline Model")
     plt.ylabel("Actual")
     plt.xlabel("Predicted")
     cm_path = "artifacts/confusion_matrix.png"
-    plt.savefig(cm_path, bbox_inches='tight')
+    plt.savefig(cm_path, bbox_inches="tight")
     plt.close()
     mlflow.log_artifact(cm_path, artifact_path="extra_artifacts")
 
@@ -93,7 +116,6 @@ with mlflow.start_run(run_name="Baseline_RandomForest", nested=True) as run:
             sk_model=model,
             artifact_path="mlflow_model",
             input_example=X_train.iloc[:5],
-            skops_trusted_types=["sklearn.tree._tree.Tree"]
         )
     except Exception as e:
         print(f"[WARNING] MLflow sklearn format log skipped: {e}")
