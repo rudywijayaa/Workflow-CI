@@ -30,7 +30,7 @@ y_test = pd.read_csv('churn_preprocessing/y_test.csv').values.ravel()
 mlflow.set_experiment("Baseline_Model_Churn")
 
 # Training & Logging Baseline Model
-with mlflow.start_run(run_name="Baseline_RandomForest"):
+with mlflow.start_run(run_name="Baseline_RandomForest", nested=True):
     n_estimators = 100
     max_depth = 10
     random_state = 42
