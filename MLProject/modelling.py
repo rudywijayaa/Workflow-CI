@@ -1,45 +1,45 @@
 import os
 import sys
 import pandas as pd
-import numpy as np
 import mlflow
 import mlflow.sklearn
-import dagshub
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
 def train_model(data_dir):
-    # 1. Autentikasi DagsHub & S3 Storage Credentials
-    token = os.getenv("DAGSHUB_USER_TOKEN") or os.getenv("MLFLOW_TRACKING_PASSWORD")
-    if token:
-        os.environ["DAGSHUB_USER_TOKEN"] = token
-        os.environ["MLFLOW_TRACKING_USERNAME"] = "rudywijayaa"
-        os.environ["MLFLOW_TRACKING_PASSWORD"] = token
+    # CEK ENVIRONMENT: Apakah sedang berjalan di GitHub Actions?
+    is_ci = os.getenv("GITHUB_ACTIONS") == "true"
 
-    # Inisialisasi DagsHub S3 Artifact Store & Tracking URI
-    dagshub.init(
-        repo_owner='rudywijayaa',
-        repo_name='Eksperimen_SML_Preprocessing_Rudy-Wijaya',
-        mlflow=True
-    )
+    if not is_ci:
+        # Jika di lokal (Kriteria 2), gunakan DagsHub
+        import dagshub
+        token = os.getenv("DAGSHUB_USER_TOKEN")
+        if token:
+            os.environ["DAGSHUB_USER_TOKEN"] = token
+            os.environ["MLFLOW_TRACKING_USERNAME"] = "rudywijayaa"
+            os.environ["MLFLOW_TRACKING_PASSWORD"] = token
+
+        dagshub.init(
+            repo_owner='rudywijayaa',
+            repo_name='Eksperimen_SML_Preprocessing_Rudy-Wijaya',
+            mlflow=True
+        )
+    else:
+        # Jika di GitHub Actions (Kriteria 3), WAJIB tracking lokal
+        mlflow.set_tracking_uri("file://" + os.path.abspath("./mlruns"))
 
     mlflow.set_experiment("Baseline_Model_Churn")
 
-    # 2. Handling Path Data
-    if not os.path.isabs(data_dir):
-        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        target_dir = os.path.join(base_path, data_dir)
-        if not os.path.exists(target_dir):
-            target_dir = os.path.abspath(data_dir)
-    else:
-        target_dir = data_dir
+    # Pastikan Path Data Benar (berada di dalam folder MLProject)
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    target_dir = os.path.join(base_path, data_dir)
 
     X_train = pd.read_csv(os.path.join(target_dir, 'X_train.csv'))
     X_test = pd.read_csv(os.path.join(target_dir, 'X_test.csv'))
     y_train = pd.read_csv(os.path.join(target_dir, 'y_train.csv')).values.ravel()
     y_test = pd.read_csv(os.path.join(target_dir, 'y_test.csv')).values.ravel()
 
-    # 3. Training & Logging
+    # Training & Logging
     with mlflow.start_run() as run:
         params = {
             "n_estimators": 100,
@@ -55,23 +55,16 @@ def train_model(data_dir):
         mlflow.log_params(params)
         mlflow.log_metric("accuracy", acc)
 
-        # Log Model ke Remote S3 DagsHub Artifact Store
+        # Log Model secara standar
         mlflow.sklearn.log_model(
             sk_model=model,
             artifact_path="model",
-            input_example=X_train.iloc[:5],
-            skops_trusted_types=["sklearn.tree._tree.Tree"]
+            input_example=X_train.iloc[:5]
         )
 
-        run_id = run.info.run_id
-        print(f"[SUCCESS] Training Selesai. Accuracy: {acc:.4f} | RUN_ID: {run_id}")
-
-        # Pass RUN_ID ke GitHub Actions Environment
-        github_env = os.getenv("GITHUB_ENV")
-        if github_env:
-            with open(github_env, "a") as f:
-                f.write(f"RUN_ID={run_id}\n")
+        print(f"[SUCCESS] Training Selesai. Accuracy: {acc:.4f} | RUN_ID: {run.info.run_id}")
 
 if __name__ == '__main__':
+    # Default folder dataset yang disiapkan dari Kriteria 1
     data_dir = sys.argv[1] if len(sys.argv) > 1 else 'churn_preprocessing'
     train_model(data_dir)
