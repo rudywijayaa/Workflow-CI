@@ -6,8 +6,11 @@ on:
   pull_request:
     branches: ['main']
   workflow_dispatch:
+
 env:
   MLFLOW_ALLOW_FILE_STORE: 'true'
+  MLFLOW_TRACKING_URI: ${{ github.workspace }}/mlruns
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -37,7 +40,6 @@ jobs:
 
       - name: Get latest MLflow run_id
         run: |
-          # Command ini mewajibkan folder lokal mlruns/ ada
           RUN_ID=$(ls -td mlruns/0/*/ | head -n 1 | cut -d'/' -f3)
           echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
           echo "Latest run_id: $RUN_ID"
