@@ -11,10 +11,6 @@ on:
 env:
   CSV_URL: 'MLProject/churn_preprocessing/X_train.csv'
   TARGET_VAR: 'Exited'
-  MLFLOW_TRACKING_URI: 'https://dagshub.com/rudywijayaa/Eksperimen_SML_Preprocessing_Rudy-Wijaya.mlflow'
-  MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_TOKEN }}
-  MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
-  DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
 
 jobs:
   build:
@@ -37,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install mlflow dagshub scikit-learn pandas matplotlib seaborn joblib skops
+          pip install mlflow scikit-learn pandas matplotlib seaborn joblib skops
 
       - name: Run mlflow project
         run: |
@@ -45,25 +41,9 @@ jobs:
 
       - name: Get latest MLflow run_id
         run: |
-          python -c "
-          import mlflow, os
-          mlflow.set_tracking_uri(os.getenv('MLFLOW_TRACKING_URI'))
-          exp = mlflow.get_experiment_by_name('Baseline_Model_Churn')
-          if exp:
-              runs = mlflow.search_runs(
-                  experiment_ids=[exp.experiment_id],
-                  filter_string=\"attributes.status = 'FINISHED'\",
-                  order_by=['start_time DESC'],
-                  max_results=1
-              )
-              if not runs.empty:
-                  run_id = runs.iloc[0]['run_id']
-                  print(f'Latest FINISHED Run ID: {run_id}')
-                  with open(os.environ['GITHUB_ENV'], 'a') as f:
-                      f.write(f'RUN_ID={run_id}\n')
-              else:
-                  raise Exception('Tidak ditemukan RUN dengan status FINISHED!')
-          "
+          RUN_ID=$(ls -td mlruns/0/*/ | head -n 1 | cut -d'/' -f3)
+          echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
+          echo "Latest run_id: $RUN_ID"
 
       - name: Install Python dependencies
         run: |
@@ -75,18 +55,13 @@ jobs:
 
       - name: Build Docker Model
         run: |
-          python -c "
-          import os, dagshub, mlflow
-          dagshub.init(repo_owner='rudywijayaa', repo_name='Eksperimen_SML_Preprocessing_Rudy-Wijaya', mlflow=True)
-          run_id = os.environ['RUN_ID']
-          print(f'Mengunduh artefak model untuk RUN_ID: {run_id}')
-          mlflow.artifacts.download_artifacts(artifact_uri=f'runs:/{run_id}/model', dst_path='./downloaded_model')
-          "
-          mlflow models build-docker --model-uri "./downloaded_model" --name "churn-prediction-model"
+          mlflow models build-docker --model-uri "runs:/$RUN_ID/model" --name "churn-prediction-model"
 
       - name: Log in to Docker Hub
-        run: |
-          echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Tag Docker Image
         run: |
