@@ -50,11 +50,12 @@ with mlflow.start_run(run_name="Baseline_RandomForest") as run:
     mlflow.log_param("max_depth", max_depth)
     mlflow.log_metric("accuracy", acc)
 
-    # Log Model ke DagsHub Remote Artifact Store
+    # Log Model ke DagsHub Remote Artifact Store dengan izin skops_trusted_types
     mlflow.sklearn.log_model(
         sk_model=model,
         artifact_path="model",
-        input_example=X_train.iloc[:5]
+        input_example=X_train.iloc[:5],
+        skops_trusted_types=["sklearn.tree._tree.Tree"]
     )
 
 print(f"[SUCCESS] Training selesai dan artefak terunggah untuk Run ID: {current_run_id}")
