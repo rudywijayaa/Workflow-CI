@@ -2,16 +2,14 @@ import os
 import pandas as pd
 import mlflow
 import mlflow.sklearn
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
 # Dynamic BASE_DIR (folder tempat modelling.py berada)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Ambil env CSV_URL dari CI/CD, jika tidak ada pakai fallback ke folder lokal
+# Ambil env CSV_URL dari CI/CD, fallback ke folder lokal
 csv_env = os.getenv("CSV_URL", "churn_preprocessing/X_train.csv")
-
-# Jika env masih membawa prefix "MLProject/", kita bersihkan
 if csv_env.startswith("MLProject/"):
     csv_env = csv_env.replace("MLProject/", "", 1)
 
@@ -24,16 +22,28 @@ y_train = pd.read_csv(y_url)
 
 target_var = os.getenv("TARGET_VAR", "Exited")
 
-with mlflow.start_run():
-    model = DecisionTreeClassifier(max_depth=5, random_state=42)
-    model.fit(X_train, y_train)
+# Set nama run sesuai DagsHub (Baseline_RandomForest)
+with mlflow.start_run(run_name="Baseline_RandomForest"):
+    n_estimators = 100
+    max_depth = 10
+    random_state = 42
+
+    model = RandomForestClassifier(
+        n_estimators=n_estimators, 
+        max_depth=max_depth, 
+        random_state=random_state
+    )
+    model.fit(X_train, y_train.values.ravel())
 
     predictions = model.predict(X_train)
     acc = accuracy_score(y_train, predictions)
 
-    mlflow.log_param("max_depth", 5)
+    # Log Parameter & Metric
+    mlflow.log_param("n_estimators", n_estimators)
+    mlflow.log_param("max_depth", max_depth)
     mlflow.log_metric("accuracy", acc)
 
+    # Log Model ke MLflow
     mlflow.sklearn.log_model(
         sk_model=model,
         artifact_path="model",
@@ -41,4 +51,4 @@ with mlflow.start_run():
         skops_trusted_types=["sklearn.tree._tree.Tree"]
     )
 
-print("Training selesai dan model berhasil disimpan!")
+print("[SUCCESS] Training Baseline RandomForest selesai!")
