@@ -69,16 +69,14 @@ jobs:
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
           DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
-          # 1. Download artifact 'model' ke folder lokal menggunakan Python
           python -c "
           import os, dagshub, mlflow
           dagshub.init(repo_owner='rudywijayaa', repo_name='Eksperimen_SML_Preprocessing_Rudy-Wijaya', mlflow=True)
           run_id = os.getenv('RUN_ID')
-          print(f'Mengunduh artifact model untuk RUN_ID: {run_id}')
+          print(f'Mengunduh artifact model untuk RUN_ID presisi: {run_id}')
           mlflow.artifacts.download_artifacts(run_id=run_id, artifact_path='model', dst_path='./downloaded_model')
           "
 
-          # 2. Build Docker dari folder lokal yang sudah terunduh
           mlflow models build-docker --model-uri "./downloaded_model" --name "churn-prediction-model"
 
       - name: Log in to Docker Hub
