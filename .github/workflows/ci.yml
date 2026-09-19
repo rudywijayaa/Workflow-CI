@@ -50,12 +50,19 @@ jobs:
           mlflow.set_tracking_uri(os.getenv('MLFLOW_TRACKING_URI'))
           exp = mlflow.get_experiment_by_name('Baseline_Model_Churn')
           if exp:
-              runs = mlflow.search_runs(experiment_ids=[exp.experiment_id], order_by=['start_time DESC'], max_results=1)
+              runs = mlflow.search_runs(
+                  experiment_ids=[exp.experiment_id],
+                  filter_string=\"attributes.status = 'FINISHED'\",
+                  order_by=['start_time DESC'],
+                  max_results=1
+              )
               if not runs.empty:
                   run_id = runs.iloc[0]['run_id']
-                  print(f'Latest Run ID: {run_id}')
+                  print(f'Latest FINISHED Run ID: {run_id}')
                   with open(os.environ['GITHUB_ENV'], 'a') as f:
                       f.write(f'RUN_ID={run_id}\n')
+              else:
+                  raise Exception('Tidak ditemukan RUN dengan status FINISHED!')
           "
 
       - name: Install Python dependencies
