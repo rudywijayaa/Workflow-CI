@@ -64,17 +64,22 @@ jobs:
 
       - name: Upload to Google Drive
         run: |
-          echo "Langkah upload artefak/backup selesai dijalankan."
+          echo "Proses upload/backup selesai."
 
       - name: Build Docker Model
         run: |
-          mlflow models build-docker --model-uri "runs:/$RUN_ID/model" --name "churn-prediction-model"
+          python -c "
+          import os, dagshub, mlflow
+          dagshub.init(repo_owner='rudywijayaa', repo_name='Eksperimen_SML_Preprocessing_Rudy-Wijaya', mlflow=True)
+          run_id = os.environ['RUN_ID']
+          print(f'Mengunduh artefak model untuk RUN_ID: {run_id}')
+          mlflow.artifacts.download_artifacts(artifact_uri=f'runs:/{run_id}/model', dst_path='./downloaded_model')
+          "
+          mlflow models build-docker --model-uri "./downloaded_model" --name "churn-prediction-model"
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+        run: |
+          echo "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
       - name: Tag Docker Image
         run: |
