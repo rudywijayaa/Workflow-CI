@@ -37,7 +37,8 @@ with mlflow.start_run():
     mlflow.sklearn.log_model(
         sk_model=model,
         artifact_path="model",
-        input_example=X_train.iloc[:5]
+        input_example=X_train.iloc[:5],
+        skops_trusted_types=["sklearn.tree._tree.Tree"]
     )
 
 print("Training selesai dan model berhasil disimpan!")
