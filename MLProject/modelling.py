@@ -9,12 +9,23 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
 def train_model(data_dir):
-    # 1. Inisialisasi DagsHub & MLflow Remote Tracking
-    dagshub.init(repo_owner='rudywijayaa', repo_name='Eksperimen_SML_Preprocessing_Rudy-Wijaya', mlflow=True)
-    mlflow.set_tracking_uri("https://dagshub.com/rudywijayaa/Eksperimen_SML_Preprocessing_Rudy-Wijaya.mlflow")
+    # 1. Autentikasi DagsHub & S3 Storage Credentials
+    token = os.getenv("DAGSHUB_USER_TOKEN") or os.getenv("MLFLOW_TRACKING_PASSWORD")
+    if token:
+        os.environ["DAGSHUB_USER_TOKEN"] = token
+        os.environ["MLFLOW_TRACKING_USERNAME"] = "rudywijayaa"
+        os.environ["MLFLOW_TRACKING_PASSWORD"] = token
+
+    # Inisialisasi DagsHub S3 Artifact Store & Tracking URI
+    dagshub.init(
+        repo_owner='rudywijayaa',
+        repo_name='Eksperimen_SML_Preprocessing_Rudy-Wijaya',
+        mlflow=True
+    )
+
     mlflow.set_experiment("Baseline_Model_Churn")
 
-    # 2. Penanganan Path Data
+    # 2. Handling Path Data
     if not os.path.isabs(data_dir):
         base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         target_dir = os.path.join(base_path, data_dir)
@@ -41,11 +52,10 @@ def train_model(data_dir):
         y_pred = model.predict(X_test)
         acc = accuracy_score(y_test, y_pred)
 
-        # Log Params & Metrics
         mlflow.log_params(params)
         mlflow.log_metric("accuracy", acc)
 
-        # Log Model Eksplisit ke Remote DagsHub Artifact Store
+        # Log Model ke Remote S3 DagsHub Artifact Store
         mlflow.sklearn.log_model(
             sk_model=model,
             artifact_path="model",
@@ -56,7 +66,7 @@ def train_model(data_dir):
         run_id = run.info.run_id
         print(f"[SUCCESS] Training Selesai. Accuracy: {acc:.4f} | RUN_ID: {run_id}")
 
-        # Otomatis Pass RUN_ID ke GitHub Actions Environment
+        # Pass RUN_ID ke GitHub Actions Environment
         github_env = os.getenv("GITHUB_ENV")
         if github_env:
             with open(github_env, "a") as f:

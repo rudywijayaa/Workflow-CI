@@ -1,13 +1,7 @@
-pandas
 numpy
+pandas
 scikit-learn
-matplotlib
-seaborn
-joblib
 mlflow
 dagshub
-lightgbm
-xgboost
-fastapi
-uvicorn
-prometheus-client
+boto3
+skops
