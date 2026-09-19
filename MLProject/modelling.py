@@ -6,6 +6,8 @@ import dagshub
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
+print("[INFO] Memulai script Baseline Modelling...")
+
 # Inisialisasi DagsHub MLflow Tracking
 dagshub.init(repo_owner='rudywijayaa', repo_name='Eksperimen_SML_Preprocessing_Rudy-Wijaya', mlflow=True)
 
@@ -25,12 +27,6 @@ y_train = pd.read_csv(y_url)
 with mlflow.start_run(run_name="Baseline_RandomForest") as run:
     current_run_id = run.info.run_id
     print(f"[INFO] Running MLflow Run ID: {current_run_id}")
-
-    # Otomatis simpan RUN_ID ke GitHub Actions Environment jika sedang running di CI
-    github_env = os.getenv("GITHUB_ENV")
-    if github_env:
-        with open(github_env, "a") as f:
-            f.write(f"RUN_ID={current_run_id}\n")
 
     n_estimators = 100
     max_depth = 10
@@ -57,5 +53,11 @@ with mlflow.start_run(run_name="Baseline_RandomForest") as run:
         input_example=X_train.iloc[:5],
         skops_trusted_types=["sklearn.tree._tree.Tree"]
     )
+
+    # TULIS RUN_ID HANYA JIKA LOG_MODEL SUDAH BERHASIL
+    github_env = os.getenv("GITHUB_ENV")
+    if github_env:
+        with open(github_env, "a") as f:
+            f.write(f"RUN_ID={current_run_id}\n")
 
 print(f"[SUCCESS] Training selesai dan artefak terunggah untuk Run ID: {current_run_id}")
