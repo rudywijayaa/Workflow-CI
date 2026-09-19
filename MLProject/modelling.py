@@ -1,63 +1,66 @@
 import os
+import sys
 import pandas as pd
+import numpy as np
 import mlflow
 import mlflow.sklearn
 import dagshub
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
-print("[INFO] Memulai script Baseline Modelling...")
+def train_model(data_dir):
+    # 1. Inisialisasi DagsHub & MLflow Remote Tracking
+    dagshub.init(repo_owner='rudywijayaa', repo_name='Eksperimen_SML_Preprocessing_Rudy-Wijaya', mlflow=True)
+    mlflow.set_tracking_uri("https://dagshub.com/rudywijayaa/Eksperimen_SML_Preprocessing_Rudy-Wijaya.mlflow")
+    mlflow.set_experiment("Baseline_Model_Churn")
 
-# Inisialisasi DagsHub MLflow Tracking
-dagshub.init(repo_owner='rudywijayaa', repo_name='Eksperimen_SML_Preprocessing_Rudy-Wijaya', mlflow=True)
+    # 2. Penanganan Path Data
+    if not os.path.isabs(data_dir):
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        target_dir = os.path.join(base_path, data_dir)
+        if not os.path.exists(target_dir):
+            target_dir = os.path.abspath(data_dir)
+    else:
+        target_dir = data_dir
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    X_train = pd.read_csv(os.path.join(target_dir, 'X_train.csv'))
+    X_test = pd.read_csv(os.path.join(target_dir, 'X_test.csv'))
+    y_train = pd.read_csv(os.path.join(target_dir, 'y_train.csv')).values.ravel()
+    y_test = pd.read_csv(os.path.join(target_dir, 'y_test.csv')).values.ravel()
 
-csv_env = os.getenv("CSV_URL", "churn_preprocessing/X_train.csv")
-if csv_env.startswith("MLProject/"):
-    csv_env = csv_env.replace("MLProject/", "", 1)
+    # 3. Training & Logging
+    with mlflow.start_run() as run:
+        params = {
+            "n_estimators": 100,
+            "max_depth": 10,
+            "random_state": 42
+        }
+        model = RandomForestClassifier(**params)
+        model.fit(X_train, y_train)
 
-csv_url = os.path.join(BASE_DIR, csv_env)
-y_url = csv_url.replace("X_train.csv", "y_train.csv")
+        y_pred = model.predict(X_test)
+        acc = accuracy_score(y_test, y_pred)
 
-X_train = pd.read_csv(csv_url)
-y_train = pd.read_csv(y_url)
+        # Log Params & Metrics
+        mlflow.log_params(params)
+        mlflow.log_metric("accuracy", acc)
 
-# Eksekusi MLflow Run
-with mlflow.start_run(run_name="Baseline_RandomForest") as run:
-    current_run_id = run.info.run_id
-    print(f"[INFO] Running MLflow Run ID: {current_run_id}")
+        # Log Model Eksplisit ke Remote DagsHub Artifact Store
+        mlflow.sklearn.log_model(
+            sk_model=model,
+            artifact_path="model",
+            input_example=X_train.iloc[:5]
+        )
 
-    n_estimators = 100
-    max_depth = 10
-    random_state = 42
+        run_id = run.info.run_id
+        print(f"[SUCCESS] Training Selesai. Accuracy: {acc:.4f} | RUN_ID: {run_id}")
 
-    model = RandomForestClassifier(
-        n_estimators=n_estimators, 
-        max_depth=max_depth, 
-        random_state=random_state
-    )
-    model.fit(X_train, y_train.values.ravel())
+        # Otomatis Pass RUN_ID ke GitHub Actions Environment
+        github_env = os.getenv("GITHUB_ENV")
+        if github_env:
+            with open(github_env, "a") as f:
+                f.write(f"RUN_ID={run_id}\n")
 
-    predictions = model.predict(X_train)
-    acc = accuracy_score(y_train, predictions)
-
-    mlflow.log_param("n_estimators", n_estimators)
-    mlflow.log_param("max_depth", max_depth)
-    mlflow.log_metric("accuracy", acc)
-
-    # Log Model ke DagsHub Remote Artifact Store dengan izin skops_trusted_types
-    mlflow.sklearn.log_model(
-        sk_model=model,
-        artifact_path="model",
-        input_example=X_train.iloc[:5],
-        skops_trusted_types=["sklearn.tree._tree.Tree"]
-    )
-
-    # TULIS RUN_ID HANYA JIKA LOG_MODEL SUDAH BERHASIL
-    github_env = os.getenv("GITHUB_ENV")
-    if github_env:
-        with open(github_env, "a") as f:
-            f.write(f"RUN_ID={current_run_id}\n")
-
-print(f"[SUCCESS] Training selesai dan artefak terunggah untuk Run ID: {current_run_id}")
+if __name__ == '__main__':
+    data_dir = sys.argv[1] if len(sys.argv) > 1 else 'churn_preprocessing'
+    train_model(data_dir)
